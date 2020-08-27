@@ -413,5 +413,44 @@ function isEmptyObject(obj) {
   return !Object.keys(obj).length;
 }
 
+// Handles messaging_postbacks events
+function handlePostback(sender_psid, received_postback) {
+  let msg = '';  
+    // Get the payload for the postback
+    let payload = received_postback.payload;
+  
+    // Set the response based on the postback payload
+    if (payload === 'GET_STARTED') {
+      msg = "Hey!!!" ;
+      console.log("get started");
+    } 
+  
+    if (payload === 'WELCOME') {
+      console.log("welcome");
+      request({
+          url: "https://graph.facebook.com/v2.6/" + sender_psid,
+          qs: {
+              access_token: process.env.PAGE_ACCESS_TOKEN,
+              fields: "first_name"
+          },
+          method: "GET"
+      }, function(error, response, body) {
+          let greeting = '';
+          if (error) {
+              console.error("Error getting user name: " + error);
+          } else {
+              let bodyObject = JSON.parse(body);
+              console.log(bodyObject);
+              name = bodyObject.first_name;
+              greeting = "Hello " + name  + ":) ";
+          }
+          let message = greeting + "Welcome to XChangeBot. Hope you are doing good today";
+          sendTextMessage(senderID, message)
+      });
+   }
+    // Send the message to acknowledge the postback
+    sendTextMessage(sender_psid, msg);
+  }
+
 app.listen(PORT);
 console.log('Listening on :' + PORT + '...');
