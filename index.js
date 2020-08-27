@@ -153,7 +153,7 @@ app.post('/', (req, res) => {
               if (byegreeting) {
                 sendTextMessage(sender, "Thank you :)");
               } else if (greetings) {
-                sendTextMessage(sender, "_*Hi!*_ You can ask me : \n_\"current price of btc\"_ \n_\"convert 1 btc to inr\"_ \n_\"btc\"_ \n_\"market cap of btc\"_ \n_\"stock price of MSFT\"_\n_*only cryptocurrency and company symbol supported e.g btc, eth, ibm, msft*_");
+                sendTextMessage(sender, "*Hi!* You can ask me : \n_\"current price of btc\"_ \n_\"convert 1 btc to inr\"_ \n_\"btc\"_ \n_\"market cap of btc\"_ \n_\"stock price of MSFT\"_\n*only cryptocurrency and company symbol supported e.g btc, eth, ibm, msft*");
               } else if(entite && !entitePrice && !entiteNum && !entiteStock) {
                 // this to get detail of cryptocurrency using symbol/name
                   makeRequest(entite.toUpperCase(), 'USD')
@@ -168,7 +168,7 @@ app.post('/', (req, res) => {
                   if (response && response.length) {
                     sendTextMessage(sender, `*${response[0].name}* \n\`Rank : ${response[0].rank}\` \n\`Symbol : ${response[0].symbol}\` \n\`Price : ${response[0].price} USD\` \n\`Market Cap : ${response[0].market_cap} USD\``)
                   } else {
-                    sendTextMessage(sender, "_*Hey!*_ You can try something like : \n_\"current price of btc\"_ \n_\"convert 1 btc to inr\"_ \n_\"btc\"_ \n_\"market cap of btc\"_ \n_\"stock price of MSFT\"_\n_*only cryptocurrency and company symbol supported e.g btc, eth, ibm, msft*_");
+                    sendTextMessage(sender, "*Hey!* You can try something like : \n_\"current price of btc\"_ \n_\"convert 1 btc to inr\"_ \n_\"btc\"_ \n_\"market cap of btc\"_ \n_\"stock price of MSFT\"_\n*only cryptocurrency and company symbol supported e.g btc, eth, ibm, msft*");
                   }
                   })
                   .catch(err => console.log(err))
@@ -239,6 +239,11 @@ app.post('/', (req, res) => {
               console.error('Oops! Got an error from Wit: ', err.stack || err);
             })
           }
+        }  else if (event.postback) {
+          console.log("inside postback");
+          const sender = event.sender.id;
+          handlePostback(sender, event.postback);
+          console.log('received event', JSON.stringify(event));
         } else {
           console.log('received event', JSON.stringify(event));
         }
@@ -353,50 +358,6 @@ async function makeRequestForStock(companyQuote) {
   return result;
 }
 
-// async function currencyConvert(id) {
-
-//   const config = {
-//       method: 'get',
-//       url: 'https://api.nomics.com/v1/currencies/sparkline?start=2018-04-14T00%3A00%3A00Z&end=2018-05-14T00%3A00%3A00Z',
-//       params: {
-//         key: NOMICS_API_KEY,
-//         ids: id,
-//         interval: '1h',
-//         convert: 'USD'
-//       }
-//   }
-
-//  const result = await axios(config)
-//   .then(res => {
-//     console.log(res.status);
-//     console.log(res.data);
-//     return res.data;
-//   })
-//   .catch(err => {
-//     console.log(err);
-//   });
-//   return result;
-// }
-
-// function sendGenericMessage(recipientId, elements) {
-//   var messageData = {
-//       recipient: {
-//           id: recipientId
-//       },
-//       message: {
-//           attachment: {
-//               type: "template",
-//               payload: {
-//                   template_type: "generic",
-//                   elements: elements
-//               }
-//           }
-//       }
-//   };
-
-//   fbMessage(messageData);
-// }
-
 function sendTextMessage(recipientId, text) {
   var messageData = {
       recipient: {
@@ -415,41 +376,35 @@ function isEmptyObject(obj) {
 
 // Handles messaging_postbacks events
 function handlePostback(sender_psid, received_postback) {
-  let msg = '';  
+    let msg = '';  
+    let f_name = '';
     // Get the payload for the postback
     let payload = received_postback.payload;
   
-    // Set the response based on the postback payload
-    if (payload === 'GET_STARTED') {
-      msg = "Hey!!!" ;
-      console.log("get started");
-    } 
-  
     if (payload === 'WELCOME') {
       console.log("welcome");
-      request({
-          url: "https://graph.facebook.com/v2.6/" + sender_psid,
-          qs: {
-              access_token: process.env.PAGE_ACCESS_TOKEN,
-              fields: "first_name"
-          },
-          method: "GET"
-      }, function(error, response, body) {
-          let greeting = '';
-          if (error) {
-              console.error("Error getting user name: " + error);
-          } else {
-              let bodyObject = JSON.parse(body);
-              console.log(bodyObject);
-              name = bodyObject.first_name;
-              greeting = "Hello " + name  + ":) ";
-          }
-          let message = greeting + "Welcome to XChangeBot. Hope you are doing good today";
-          sendTextMessage(senderID, message)
-      });
+      msg = "Hey " ;
+
+      const config = {
+        method: 'get',
+        url: "https://graph.facebook.com/v2.6/" + sender_psid,
+        params: {
+          access_token: process.env.FB_PAGE_TOKEN,
+          fields: "first_name"
+        }
+    }
+  
+   axios(config)
+    .then(res => {
+      console.log(res.status);
+      console.log(res.data);
+      msg = msg + res.data.first_name;
+      sendTextMessage(sender_psid, msg);
+    })
+    .catch(err => {
+      console.log(err);
+    });
    }
-    // Send the message to acknowledge the postback
-    sendTextMessage(sender_psid, msg);
   }
 
 app.listen(PORT);
